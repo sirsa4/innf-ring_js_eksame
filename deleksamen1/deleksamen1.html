@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="nb">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deleksamen 1 - finn feilene</title>
+    <!-- CSS-stiler. Dette skal ikke endres -->
+    <style>
+        div#mainframe {
+            background-color: #b61010;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        div#background {
+            width: 80vw;
+            height: 80vh;
+            background-size: cover;
+            background-image: url('start-cat.jpg');
+            background-color: #232323;
+            background-position: center center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="mainframe">
+        <div id="background"></div>
+    </div>
+
+
+    <!-- 
+	JavaScript. Her finnes 10 feil som må rettes for at det riktige bildet skal vises.
+        PS: Du skal ikke skrive om koden, kun rette den opp der du finner feil.
+        Kommenter hver feil du finner! 
+    -->
+    <script>
+
+        //mangler avsluttende pnutt " i "error", 
+        var examtype = "error";
+        //skal være = for sette verdi til variabelen, ikke :
+        var studentType = "hero";
+        //studenttype skal camelCase. studentType
+        //ansførselstegn ikke fullført. "hero", isten for "hero;
+        var maxScore = 1337;
+        var currentScore = 330;
+        //Det var 2, ==. skal være 1.
+
+        //semi kolon isteden for vanlig kolon
+        var addedScore = currentScore * 4;
+        var missingMaxScore = "17";
+        //var currenScore = addedScore, steden
+        
+        var currentScore = "addedScore" + "missingMaxScore";
+        var green = "0, 128, 0";
+        //en =, steden for 2
+        if (maxScore = 1337) {
+            //skal være + etter "-" for å koble dem sammen. Ellers blir "-" og studenttype lest 1 og samme ting når de er 2 forskjellige verdier.
+            var successImage = examtype + "-" + studentType;
+        }
+        //max skal det være ===. 
+        if (currentScore = maxScore) {
+            //krøllparentes isteden for klammeparentes ].
+            //" ser ikke riktig. Fjerner " i begge linjene
+            //det ById, ikke ByIDE
+            document.getElementById("background").style.backgroundImage = "url(" + successImage + ".jpg)";
+            document.getElementById("mainframe").style.backgroundColor = "rgb(" + green + ")";
+            //skal være .style, ikke ,style
+            //green, ikke greeen
+        }
+    </script>
+</body>
+
+</html>

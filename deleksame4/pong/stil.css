@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Rye&display=swap');
+
+body {
+    font-family: Rye, sans-serif;
+    background: linear-gradient(to left, hsla(200, 70%, 50%, .8), hsla(69, 60%, 40%, 0.8), hsla(0, 100%, 50%, .7));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+canvas {
+    background-color: whitesmoke;
+}
+.container {
+    display: flex;
+    gap: 1rem;
+    font-size: 1.3rem;
+  
+}
+.space {
+   border-right: 4px solid black;
+   padding: 0;
+}
+
+p {
+    background-color: black;
+    color: white;
+    padding: 0 2rem;
+}
+
+#spiller1{
+    color: red;
+    background-color: white;
+    padding: 0 5px;
+}
+#spiller2 {
+    color: blue;
+    background-color: white;
+    padding: 0 5px;
+}
+#restart{
+    margin-top: .5rem;
+    text-decoration: none;
+    background: black;
+    color: white;
+    padding: 0 3rem;
+    font-size: 1.5rem;
+    border-radius: 5px;
+    transition-property: transform;
+    display: none;
+}
+#restart:active {
+    transform: scale(.9);
+}

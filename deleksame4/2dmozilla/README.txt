@@ -1,0 +1,2 @@
+Jeg lagde den har igjen for andre gang samme dag som jeg begynte på deleksamen4S for refreshe hjernen med bruk canvas element.
+Tutorial fra mdn: https://developer.mozilla.org/en-US/docs/Games/Tutorials/2D_Breakout_game_pure_JavaScript

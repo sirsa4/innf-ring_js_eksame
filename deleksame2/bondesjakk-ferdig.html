@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tripp, trapp, tresko</title>
+
+    <style>
+        body {
+            background: #ccc;
+            font-family: Helvetica;
+        }
+        
+        body>* {
+            box-sizing: border-box;
+            padding: 0;
+            margin: 0;
+        }
+        
+        #playerturn {
+            color: #34495e;
+            font-size: 3em;
+            margin: 20px auto;
+            max-width: 600px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        #gamearea {
+            width: 600px;
+            height: 600px;
+            margin: 0 auto;
+            background-color: #34495e;
+            color: #fff;
+            border: 6px solid #2c3e50;
+            border-radius: 10px;
+            display: grid;
+            grid-template: repeat(4, 1fr) / repeat(4, 1fr);  /* byttet 3 if repeat til 4. Testet på inspektor. Trodde gamearea skulle trenge mer høyde og bredde, men det var ikke nødvendig med tanke på at fr units er egne mål*/
+        }
+        
+        .celle {
+            border: 6px solid #2c3e50;
+            border-radius: 2px;
+            font-weight: bold;
+            font-size: 4em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #newgame {
+            width: 300px;
+            padding: 20px;
+            display: block;
+            margin: 20px auto;
+            background: #6ea100;
+            border: 2px solid #000;
+            border-radius: 5px;
+            color: #000;
+            font-size: 2rem;
+            display: none;
+        }
+        #newgame:hover {
+            background: #364e01;
+            color: white;
+            cursor: pointer;
+        }
+        .antall {
+            width: 400px;
+            background-color: #000000;
+            color: white;
+            font-size: 1.3rem;
+            margin: 0 auto;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div id="playerturn">Spiller <span id="player"></span> (<span id="playermark"></span>) sin tur:</div>
+    <div id="gamearea">
+        <div id="celle0" class="celle"></div>
+        <div id="celle1" class="celle"></div>
+        <div id="celle2" class="celle"></div>
+        <div id="celle3" class="celle"></div>
+        <div id="celle4" class="celle"></div>
+        <div id="celle5" class="celle"></div>
+        <div id="celle6" class="celle"></div>
+        <div id="celle7" class="celle"></div>
+        <div id="celle8" class="celle"></div>
+        <div id="celle9" class="celle"></div>
+        <div id="celle10" class="celle"></div>
+        <div id="celle11" class="celle"></div>
+        <div id="celle12" class="celle"></div>
+        <div id="celle13" class="celle"></div>
+        <div id="celle14" class="celle"></div>
+        <div id="celle15" class="celle"></div>
+    </div>
+    <!-- Her blir 8 celle div for å 4x4 bane -->
+
+    <!-- Her er span-tag brukt i div. Div begynte å forsvinne når nytt spill ble startet. -->
+    <div class="antall">Antall Kamp:<span id="tel">1</span></div>
+
+    <button id="newgame" onclick="restartGame()">Start spill på nytt</button>
+    <script>
+        /* For å forstå hvorfor vi har celle-IDene 0 - 8 i HTML-koden over:
+        I alle programmeringsspråk brukes arrayer for å lagre strukturert informasjon.
+        I arrayer kan alt som lagres hentes ved å bruke indexen til plasseringen noe er lagret.
+        Indexene starter på 0, og blir 1 større for hver ting som lagres. Det vil si at spillerbrettet med
+        3x3 ruter har disse indexene:
+
+        0   1   2
+        3   4   5
+        6   7   8
+
+        Dermed kan vi se, hvis det er plassert en X i plassene med index 0, 1 og 2, at 
+        spilleren med spillermerket X vinner (har 3 på rad). Det samme ville han ha gjort
+        dersom det var lagret en X på indexene 0, 4 og 8 (diagonalt nedover).
+        Denne forståelsen av spillebrettet sammenlignet med en array (liste) vil være nyttig videre i forståelsen av koden.
+        */
+  
+        //Vi lager en variabel som inneholder spillerstatus
+        //Denne er aktiv (true) ved oppstart, og settes til false når en spiller vinner
+        //eller spillbrettet er fullt og det er uavgjort. Dette lar oss bruke variabelen
+        //spillStatus for å sjekke om spillet er aktivt og ulike deler av prosessen skal tillates/kjøres.
+        var spillStatus = true;
+
+        //Vi trenger variabler for spiller (hvilken spiller sin tur det er),
+        //og hvilket spillermerke den spilleren skal ha. Når spillet starter, er det 
+        //spiller 1 som begynner, og markerer sin plassering i brettet med et kryss (X)
+        var player = 1;
+        var playermark = "X";
+        //Dette skriver vi ut i <span>-tagene med id-ene "player" og "playermark" i <div>-tagen med id "playerturn"
+        //***! Det er feil her. innerHTML = player: er ikke riktig. Avsluttes med semikolon player;
+        document.getElementById("player").innerHTML = player;
+        document.getElementById("playermark").innerHTML = playermark;
+
+       
+
+        //Vi må også ha en oversikt over hvilke kombinasjoner av brikkeplasseringer 
+        //(indexer i spillerBrikker-arrayen)
+        //som utgjør vinnerkombinasjoner. Disse lagrer vi i en array med 2 nivåer 
+        //(en array, som inneholder nye arrayer med vinnerkombinasjonene)
+
+        /* winningCombos øker når spillbrett er 4x4 fra 8 combos til 10. Det er ikke lett å funne alle mulig kombo uten å tegne cellene med navn på papir */
+        var winningCombos = [
+            [0, 1, 2, 3],
+            [4, 5, 6, 7],
+            [8, 9, ,10, 11],
+            [12, 13, 14, 15],                     
+            [0, 4, 8, 12],
+            [1, 5, 9, 13],
+            [2, 6, 10, 14],
+            [3, 7, 11, 15],
+            [0, 5, 10, 15],
+            [3, 6, 9, 12]
+        ];
+        //Disse kan vi nå vise til ved å si winningCombos[0]. Variabelen winningCombos[0] inneholder nå en array med verdiene [0, 1, 2].
+        //Viser vi til winningCombos[0][1] viser vi til index 1 i den første arrayen på nivå 2. Den innholder verdien 1. Denne verdien
+        //refererer til index 1 i spillerBrikker-arrayen under, eller spillbrettplassering med id 1
+
+        //For å kunne sammenligne vinnerkombinasjoner med hvor spillerne har plassert sine spillermerker,
+        //trenger vi en oversikt over Spillbrettplasseringer. Disse kan vi lagre i en array, siden vi fra
+        //starten av koden så at spillbrettet kan tenkes på som indexer i en array.
+        //Vi lager klar en oversikt, en array, med 9 tomme plasseringer vi senere kan fylle med spillervalg.
+
+        /* Her blir brikker til 16 fra 9 */
+        var spillerBrikker = ["","","","","","","","","","","","", "","","",""];  
+
+        //Videre trenger vi å registrere når en spiller klikker på en rute i spillbrettet.
+        //Når en spiller klikker på en rute, skal vi få noe til å skje i koden, derfor kaller vi
+        //en funksjon kalt spill(), og sender en parameter inn i funksjonen for å fortelle hvilken rute
+        //(0-8, igjen trenger vi koblingen mellom array-indexer og spillbrettet fra starten av koden)
+        //som er trykket på.
+        document.getElementById("celle0").addEventListener("click", function() {
+            spill(0);
+        });
+        document.getElementById("celle1").addEventListener("click", function() {
+            spill(1);
+        });
+        document.getElementById("celle2").addEventListener("click", function() {
+            spill(2);
+        });
+        document.getElementById("celle3").addEventListener("click", function() {
+            spill(3);
+        });
+//.....................................................................................................................................
+        //addEventLner er ikke riktig. Det er addEventListener
+        document.getElementById("celle4").addEventListener("click", function() {
+//......................................................................................................................................
+            spill(4);
+        });
+        document.getElementById("celle5").addEventListener("click", function() {
+            spill(5);
+        });
+        document.getElementById("celle6").addEventListener("click", function() {
+            spill(6);
+        });
+        document.getElementById("celle7").addEventListener("click", function() {
+            spill(7);
+        });
+        document.getElementById("celle8").addEventListener("click", function() {
+            spill(8);
+        });
+        document.getElementById("celle9").addEventListener("click", function() {
+            spill(9);
+        });
+        document.getElementById("celle10").addEventListener("click", function() {
+            spill(10);
+        });
+        document.getElementById("celle11").addEventListener("click", function() {
+            spill(11);
+        });
+        document.getElementById("celle12").addEventListener("click", function() {
+            spill(12);
+        });
+        document.getElementById("celle13").addEventListener("click", function() {
+            spill(13);
+        });
+        document.getElementById("celle14").addEventListener("click", function() {
+            spill(14);
+        });
+        document.getElementById("celle15").addEventListener("click", function() {
+            spill(15);
+        });
+/* 
+celler fra 9 til 15 blir lagt til. Det følger samme mønster som i sto i 3x3 bane.
+*/
+        
+
+        //Når en rute er trykket på, skal vi kjøre funksjonen spill. Denne inneholder prosessen 
+        //datamaskinen må gå gjennom for å sjekke om ruten er ledig, og om den er det plassere
+        //riktig spillerbrikke i ruten avhengig av hvilken spiller det er som klikker på ruten:
+        function spill(celle) {
+            //Hvis spillstatus er true, er det lov å spille, og vi kan gjennomføre spillerhandlinger
+            if(spillStatus === true) {
+                //Er cellen ledig? Vi må sjekke hvilken celle som er trykket på,
+                //for så å sjekke om innholdet er en tom streng:
+                var cellSpace = document.getElementById("celle"+celle).innerHTML;
+                
+                //Hvis den er ledig...
+//....................................................................................................................................         
+                //***! feil her. ifff er ikke riktig. Det er skal være if().............................
+                if(cellSpace === "") {
+//....................................................................................................................................
+                    //...sjekk hvilken spiller sin tur det er, og plasser riktig symbol på spillerbrettet
+                    if (player === 1) {
+                        //Plasser symbol på spillerbrettet i nettleseren
+                        document.getElementById("celle"+celle).innerHTML = "X";
+                        //og lagre symbolet på riktig plass i arrayen som holder kontroll på spillbrettet
+                        spillerBrikker[celle] = "X";
+                    } else {
+                        document.getElementById("celle"+celle).innerHTML = "O";
+                        spillerBrikker[celle] = "O";
+                    }
+
+                    //Etter en brikke er plassert, må vi sjekke om det fortsatt er ledige plasser igjen
+                    //på spillbrettet. Hvis alle er fylt opp, og ingen har vunnet, må vi avslutte spillet
+                    //og melde om at det er uavgjort
+                    if(!spillerBrikker.includes("")) {
+                        document.getElementById("playerturn").innerHTML = "Uavgjort! Ingen vant...";
+                        document.getElementById("newgame").style.display = "block";
+                        spillStatus = false;
+                    }
+                    
+                    //Når brikken er plassert på spillerbrettet, må vi sjekke om den - og brikkene rundt - 
+                    //utgjør en vinnerkombinasjon. Denne funksjonaliteten ligger i funksjonen sjekkVinner(),
+                    //siden dette er et litt større sett med handlinger og kan gi noen ulike utfall.
+//...........................................................................................................................
+                    setTimeout(sjekkVinner, 1000); 
+                    //funksjonen skjennerVinner blir kjørt her. Så funksjonen er satt i javascript innbygd funksjon, setTimeout
+                    //setTimeout tar imot to parameter, funksjon og tid i millisekunder. Her 1000millisek som er 1sec.
+                    //Vi får 1sec delay for skjekkVinner funksjon kjører og vinner eller uavgjørt blir vist på skjerm.
+//............................................................................................................................
+                //Men, hvis cellen ikke er ledig...
+                } else {
+                    //...skriver vi ut en beskjed til spilleren, og lar han velge en ny celle.
+                    alert("Denne cellen er opptatt. Vennligst velg en annen celle");
+                    return;
+                }
+
+                //Når spillerens tur er ferdig, er det neste spillers tur.
+                //Det viser vi ved å sette variabelen "player" til 2 hvis den var 1 denne turen, eller hvis den var 2, sett tilbake til 1.
+                //På samme måte må spillersymbolet veksles mellom X og O.
+                if (player === 1) {
+                    player = 2;
+                    playermark = "O";
+                } else {
+                    player = 1;
+                    playermark = "X";
+                }
+                if(spillStatus === true) {
+                    document.getElementById("player").innerHTML = player;
+                    document.getElementById("playermark").innerHTML = playermark;
+                }
+            //Hvis spillstatus er false, avslutter vi funksjonen uten å utføre noen handlinger.
+            } else {
+                //her er kommentar tegn ikke fullfort riktig. 2 //, ikke /
+                //Så returnerer vi spillet
+                return;
+            }
+        }
+
+
+        function sjekkVinner() {
+            var rundenVunnet = false;
+            //Vi må sjekke etter vinner for hver brikke som plasseres på brettet.
+            // Dette gjør vi ved å gå gjennom alle vinnerkombinasjonene, og
+            //sjekke om brikkene på spillbrettet er like ved indexene til vinnerkombinasjonene:
+            for(var combination = 0; combination <= 9; combination++) { //vinner combo 10
+                var vinnerKomboPlass1 = winningCombos[combination][0]; //Henter ut plassering av vinnerkombinasjonens rad 1, eksempel winningCombos[0][0] første runde, som inneholder verdien 0.
+                var vinnerKomboPlass2 = winningCombos[combination][1];
+                var vinnerKomboPlass3 = winningCombos[combination][2]
+                var vinnerKomboPlass4 = winningCombos[combination][3]  //+1 vinner komboplass lagt til for 4x4
+
+                var brikke1 = spillerBrikker[vinnerKomboPlass1]; //Henter ut verdien (spillmerket) på indexen til første vinnerkombinasjonsplass fra spillerBrikker, eksempel spillerBrikker[0] første runde.
+                var brikke2 = spillerBrikker[vinnerKomboPlass2];
+                var brikke3 = spillerBrikker[vinnerKomboPlass3];
+                var brikke4 = spillerBrikker[vinnerKomboPlass4];    //+1 spillerbrikke
+
+                //Hvis en av plassene i vinnerkombinasjonen er tom, er det ikke vunnet noe.
+                //Da kan løkken bare fortsette å kjøre.
+                if(brikke1 === "" || brikke2 === "" || brikke3 === "" || brikke4 === "") {     //+1 brikke blir lagt til, følger samme struktur.
+                    continue;
+                }
+
+                //Hvis brikke1 er det samme som brikke 2, og brikke 2 er det samme som
+                //brikke3, er alle like, og vi har en vinnerkombinasjon. Da 
+                if(brikke1 === brikke2 && brikke2 === brikke3 && brikke3 === brikke4) {    //brikke kombo 3 lik 4 inkludert ved å følge samme mønster som forrige brikker.
+                    rundenVunnet = true;
+                    break;
+                }
+            }
+
+            //Hvis runden er vunnet, skal vi gjøre noen handlinger:
+            if(rundenVunnet === true) {
+                //Skriv ut hvilken spiller som har vunnet
+
+                //ny var for vinner, kode hjelp fra Jørgen, medstudent som fant løsning på at riktig spiiller finner vet å lage en variabel og en if statement. Her har variabelen riktigVinner verdi 1. Denne variabelen byttes med player variabelen som var konkatenert i utskrift av vinner på linje 350 under. Og i if i parameter hvis player === 1, får variabel riktigVinner ny verdi som er 2. Grunnen at verdi i variabel riktigVinner blir byttet til 2 når variabelens verdi utenfor if er 1, er fordi på grunn av setInterval() funksjonen. Når player 2 har vunnet, så går det liten stund delay før vinner blir skrevet ut. I denne delay perioden er det player 1 sin tur, player variabel er lik 1 og da stemmer if statement til å være true. Riktig vinner som er player 2 blir skrevet med at if kjører. 
+                
+                //På andre siden når player 1 vinner, i delay perioden er det player 2 sin tur og da er variabel player lik 1 og if vil ikke kjøre i delay perioden. Player 1 blir da skrevet ut som vinner.
+                var riktigVinner = 1;
+                
+                if(player === 1){
+                    riktigVinner = 2;
+                }
+
+                //vinner kombos kan farges konkatenering i getElementById parentes
+                //felles for id for cellene er "celle" og nummer av celle kan vi bruke kombo variabelene i for loop over denne if statement. Vinner blir skrevet ut i div med 'playerturn'.
+                document.getElementById("playerturn").innerHTML = "Spiller " + riktigVinner + " har vunnet!";
+                document.getElementById('celle' + winningCombos[combination][0]).style.color = '#FFD700';
+                document.getElementById('celle' + winningCombos[combination][1]).style.color = '#FFD700';
+                document.getElementById('celle' + winningCombos[combination][2]).style.color = '#FFD700';
+                document.getElementById('celle' + winningCombos[combination][3]).style.color = '#FFD700';        //kombo 4 fargelagt
+               
+                
+                
+
+ //....................................................................................................................................
+                //farge forandret til gull når spiller har vunnet.
+                document.getElementById("playerturn").style.backgroundColor = '#FFD700';
+ //..................................................................................................................................    
+                //Gjør restart spill-knappen synlig 
+                document.getElementById("newgame").style.display = "block";
+                //Sett spillstatus til false, slik at ingen spillere får plassere
+                //flere brikker på brettet - dette løses med sjekken i funksjonen spill()
+                spillStatus = false;
+            }
+        }
+        
+
+
+        //Når et spill er avsluttet, og et nytt skal begynne, må vi gjøre klar en del ting:
+        // 1) Fjerne brikkene som er plassert på brettet - både i grensesnittet og i programmet vårt
+        // 2) Sette spillstatus til true, slik at vi får lov til å trykke på rutene i spillbrettet igjen
+        // 3) Sette turen til spiller en og spillersymbolet til X
+        // 4) Fjerne melding om vinner eller uavgjort, og oppdatere med spillers tur-tekst
+        //Dette samler vi i en funksjon, slik at vi kan kalle funksjonen og utføre alle disse tingene når vi trenger det:
+
+          //Så lager vi en teller for å se hvor mange spill vi har spilt: 
+          var antallSpill = 1;
+        function restartGame() {
+            // 1)
+            spillerBrikker = ["","","","","","","","","","","","", "","","",""]; //spiller brikkene øker til 16 fra 9 mulige i 3x3 bane
+            var celleteller = 0;
+            while (celleteller < 16) {   //antall celler nå 16 celler, fra 9 når 3x3 bane
+                document.getElementById("celle" + celleteller).innerHTML = "";
+                celleteller++;
+            }
+            // 2)
+            spillStatus = true;
+            // 3)
+            player = 1;
+            playermark = "X";
+            // 4)
+            document.getElementById("playerturn").innerHTML = 'Spiller <span id="player">1</span> (<span id="playermark">X</span>) sin tur:';
+
+            for(i = 0; i < spillerBrikker.length; i++){              //for loop bytter brikke farge ved å bruke array spillerBrikker og farger hvit gjennom hele array. Det er lettere å gjøre alt hvit i restart isteden å prøve a farge hvit akkurat vinner markene
+            document.getElementById('celle'+i).style.color = '#fff';
+        } 
+        antallSpill++;
+        document.getElementById("playerturn").style.backgroundColor = '';
+        document.getElementById('tel').innerHTML = antallSpill;
+        document.getElementById("newgame").style.display = "none"; 
+        } 
+    </script>
+</body>
+
+</html>

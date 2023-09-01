@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Satyr Reaper</title>
+    <style>
+       @import url('https://fonts.googleapis.com/css2?family=Rye&family=Titillium+Web:wght@300&display=swap');
+        body {
+            background-color: #7f5a83;
+            background-image: linear-gradient(315deg, #7f5a83 0%, #0d324d 74%);
+            color: #f3f3f3;
+            font-family: 'Titillium Web', sans-serif;
+            text-align: center;
+        }
+        h1, h2, h3 {
+            font-family: 'Rye', cursive;
+        }
+        h1 {
+            font-size: 3rem;
+        }
+        #gamearea {
+            margin: 20px auto;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <h1>The Satyr Reaper</h1>
+    <p>Play as the reaper. Slay as many Satyres as possible in one minute!</p>
+    <canvas id="gamearea"></canvas>
+ 
+
+    <script>
+        //Sett opp Canvas for manipulasjon i JavaScript
+        /*
+        -Først delen av koden henter og lagrer canvas elementet i variabelen 'canvas' ved hjelp av ID på canvas som er 'gamearea'.
+        -canvas bredde og høyde blir satt på 800px bredde og 700px høyde.
+        -ny variabel 'ctx' blir lagd, med metode getContext('2d'). 
+        -Denne metoden gir oss mulighet til å kunne tegne 2d figurer og tekst på canvas området.
+        -vi kan bruke ctx variabel til rendere inn elementer på canvas på lettere måte
+        Lenker:
+        -for å bedre forklare hva getContext() metode er
+        https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D
+         */
+        var canvas = document.getElementById("gamearea");
+        canvas.width = 600;  //både width/height er byttet til 600px.
+        canvas.height = 600;
+        var ctx = canvas.getContext("2d");
+
+        
+        //Gjør klar bakgrunnsbilde
+        
+        /*
+        -Denne kode biten og neste 2 etter laster ned bilder på canvas.
+        -Her blir det lagd 2 variabler, background og backgroundLoaded.
+        -Variabel 'background' lagrer background verdi med konstruktør 'new Image()'.
+        -img src legges på 'background' variabel etter funksjonen med background.src.
+        -img src er 'background.jpg' som er spillets svart backgrunn som dekker hele canvas området.
+        -Andre variabel 'backgroundLoaded' inneholder status background variabel ved at den 'false'.
+        -Det betyr at backgrunnsbilde er som vanlig ikke der, men funksjon onload, oppstart
+        blir 'backgroundLoaded' satt på 'true'. Så backgrunnsbilde laster ved spill start med side refresh.
+
+        lenker:
+        for å forstå new Image konstruktør: https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/Image
+        Bok: Programmering i Javascript: side.254 om hva konstruktør er på norsk.
+         */
+        var backgroundLoaded = false;
+        var background = new Image();
+        background.onload = function() {
+            backgroundLoaded = true;
+        }
+        background.src = "images/background.jpg";
+
+      //............................................................................................. 
+        //Gjør klar bilde av Reaper (spilleren)
+        /* 
+        Denne kode biten er ganske lik backgrunnbilde kode bit. isteden for backgrunnsbildet, blir det
+        lastet opp med onload 'reaper.png', bilde for spillereren eller hero som vi kan spille med.
+
+        lenker:
+        samme ressurser som backgrunn kode bit
+        */
+       /*
+       oppgave 3:2,4: reaper tegnes ikke på nytt når reaperLoaded er true. Jeg vet ikke hvorfor, men det funker.
+        */
+        var reaperLoaded = false;
+        var reaperImage = new Image();
+        reaperImage.onload = function() {
+            reaperLoaded = true;
+        }
+        reaperImage.src = "images/reaper.png";
+//.......................................................................................................
+        //Gjør klar bilde av Satyr (fienden)
+        /*
+        Fiende blir tegnet opp på samme måte som hero og backgrunn
+        lenke: samme som bakgrunnsbilde og spiller(reaper).
+         */
+        var enemyLoaded = false;
+        var enemyImage = new Image();
+        enemyImage.onload = function() {
+            enemyLoaded = true;
+        }
+        enemyImage.src = "images/enemy1.png";
+   
+
+        /*
+        oppgave 3.1: tegn enemy2 
+        -bygger enmy2 samme som enemy1
+         */
+         var enemy2Loaded = false;
+        var enemy2Image = new Image();
+        enemy2Image.onload = function() {
+            enemy2Loaded = true;
+        }
+        enemy2Image.src = "images/enemy2.png";
+      
+
+//..............................................................................
+        //Gjør klar info om spillere, monster og tellere
+        /* 
+        -I denne seksjonen har vi 3 variabler, en for reaper(spiller), enemy og teller for enemiesSlayed.
+        -variabel for reaper er object som nøkkel: speed og verdi: 256;
+        -variabel for enemy er tom.
+        -enmiesSlayed er teller som starter med 0. Når reaper treffer enemy, vil teller gå opp
+
+        lenke: https://www.w3schools.com/js/js_objects.asp for objekt
+        */
+
+        var reaper = {speed: 256};
+        var enemy = {};
+        
+        var enemy2 = {}; //enemy2 object tom nøkkel og verdi.
+        
+        var enemiesSlayed = 0;
+//..........................................................................................................
+        //Lag en funksjon som kjører i gang spillelementene
+        //Plasser spilleren i midten av brettet, og fienden et vilkårlig sted innenfor spillbrettet
+        /* 
+        Her har vi en funksjon som tegner opp karakterer.
+        -vi har reaper.x og y som er x og y-koordinatene reaper blir tegnet opp når spill starter
+        -reaper.x canvas.width(800) / 2 = 400. reaper blir tegnet på x-akse: 400px på canvas
+        -reaper.y canvas.width(700) / 2 = 350. reaper blir tegnet på y-akse: 350px på canvas
+        -enemy.x er random x-akse posisjon fra 32px og max 636px.Det sikrer at enemy ikke spawner utenfor x-asken
+        -enemy.y er samme med også sikrer at enemy ikke går utenfor y-aksen
+         */
+//............................................................................................................        
+        /* 
+        oppgave 3:2 lagde variab
+         */
+        var enemyx;
+        var enemyy;
+        var x = enemyx;
+        var y = enemyy;
+
+        function drawReaper(enemyx, enemyy) {
+            reaper.x = canvas.width / 2; 
+            reaper.y = canvas.height / 2; 
+           //enemy2 x og y-akse
+        }
+        /* console.log(enemy2); */
+        //seperat enemy tegne funksjon
+        function drawEnemy(enemyx, enemyy){
+            enemy.x = enemyx + (Math.random() * (canvas.width - 64));
+            enemy.y = enemyy + (Math.random() * (canvas.height - 64));
+        }
+        function drawEnemy2(enemyx, enemyy){
+            enemy2.x = enemyx + (Math.random() * (canvas.width - 64));
+            enemy2.y = enemyy + (Math.random() * (canvas.height - 64)); 
+        }
+
+        
+//....................................................................................................................
+        //Sjekk om spilleren har trykket ned (og holder) en tast:
+
+        /*
+        Her har vi to lyttere eller events. 
+        -Den først event 'keydown', lyttter etter når tast på tastatur blir trukket ned. Da kjører denne lytteren
+        -Den andre event 'keyup', er lytter for når tast på tastatur blir sluppet og er ikke trykket/holdt ned lenger,
+        da kjører denne lytteren.
+        -Hver lytter har funksjonen i parameter når det kjører.
+        -'keydowm' har funksjon buttonPressed
+        -'keyup' har funksjon buttonReleased
+         */
+        document.addEventListener('keydown', buttonPressed);
+        document.addEventListener('keyup', buttonReleased);
+//.....................................................................................................................
+         //funksjon for å sjekke hvilken tast som er trykket, og bevege spilleren i henhold:
+
+         /* 
+         Her har vi funksjonene for to eventene 'keyup og keydown'.
+         -men først blir det laget 4 variabel piltast venstre, høyre, opp og ned.
+         -disse 4 variable satt på 'false' utenfor funksjonene
+         -men i funksjonen 'buttonPressed'er de satt på 'true'. Da er piltast aktiv
+         -motstatt i funksjonen 'buttonReleased'er de satt på 'false'. Da er piltast ikke aktiv
+         -funksjonene har parameter 'e' som er event skopet.
+         -e.keyCode er å begrense til bare piltastene som man ønsker å tillatte å bruke som er,
+         lagret i de 4 variablene untenfor funksjonen 
+         -keyCode 37 er venstre piltast, 39 høyre, 38 opp og 40 ned.
+          */
+        var buttonLeft, buttonRight, buttonUp, buttonDown = false;
+        
+        function buttonPressed(e) {
+            //Venstre:
+            if(e.keyCode == 37) {
+                buttonLeft = true;
+            }
+            //Høyre:
+            if(e.keyCode == 39) {
+                buttonRight = true;
+            }
+            //Opp:
+            if(e.keyCode == 38) {
+                buttonUp = true;
+            }
+            //Ned:
+            if(e.keyCode == 40) {
+                buttonDown = true;
+            }
+        }
+        function buttonReleased(e) {
+            //Venstre:
+            if(e.keyCode == 37) {
+                buttonLeft = false;
+            }
+            //Høyre:
+            if(e.keyCode == 39) {
+                buttonRight = false;
+            }
+            //Opp:
+            if(e.keyCode == 38) {
+                buttonUp = false;
+            }
+            //Ned:
+            if(e.keyCode == 40) {
+                buttonDown = false;
+            }
+        }
+//....................................................................................................................................
+        //Update-funksjon som inneholder alle spillsekvenser når spillet er aktivt:
+        
+        /*
+        Denne funksjonen gir bevegelse når man trekker på piltastene
+        -Det er bare når piltaste er 'true' in buttonPressed().
+        -funksjonen update har paramater 'modifier' som kan brukes til bytte bevegelses hastighet til reaper spiller.
+        -bevegelser er det som gir illusjon om bevegelse, for reaper blir tegnet på hver bevegelse med piltast.
+         */
+        
+        function update(modifier) {
+            //Flytt Reaper-spilleren
+            if(buttonLeft) {
+                reaper.x -= reaper.speed * modifier;
+            }
+            if(buttonRight) {
+                reaper.x += reaper.speed * modifier;
+            }
+            if(buttonUp) {
+                reaper.y -= reaper.speed * modifier;
+            }
+            if(buttonDown) {
+                reaper.y += reaper.speed * modifier;
+            }
+
+//...................................................................................................................................
+            //Sjekk om Reaper tar igjen fienden:
+            /*
+            Denne if statement ser om det kollisjon mellom reaper or enemy langs x og y-aksen
+            -hvis det kollison stemmer, så blir enemiesSlayed inkrementere med 1 og både reaper og enemy blir tegnet på
+
+             */
+
+            if(
+                reaper.x <= (enemy.x + 32) && 
+                reaper.y <= (enemy.y + 32) && 
+                enemy.x <= (reaper.x + 32) && 
+                enemy.y <= (reaper.y + 32)
+                                                    //enemy2 krasj deteksjon med reaper
+               /*  reaper.x <= (enemy2.x + 32) && 
+                reaper.y <= (enemy2.y + 32) && 
+                enemy2.x <= (reaper.x + 32) && 
+                enemy2.y <= (reaper.y + 32)  */
+            ) {
+                enemiesSlayed++;
+                 drawEnemy(32,32);
+               
+                
+                
+            }
+            if(
+                reaper.x <= (enemy2.x + 32) && 
+                reaper.y <= (enemy2.y + 32) && 
+                enemy2.x <= (reaper.x + 32) && 
+                enemy2.y <= (reaper.y + 32)
+                                                    //enemy2 krasj deteksjon med reaper
+               /*  reaper.x <= (enemy2.x + 32) && 
+                reaper.y <= (enemy2.y + 32) && 
+                enemy2.x <= (reaper.x + 32) && 
+                enemy2.y <= (reaper.y + 32)  */
+            ) {
+                enemiesSlayed++;
+                 drawEnemy2(32,32);
+               
+                
+                
+            }
+        
+        }
+//...................................................................................................................................
+        //Gjør klar tidsteller:
+        /* 
+        Her har vi variabel for teller med navn 'counter' og variabel for spillover, 'gameOver'
+        -funksjon counter() har increment count--;, som betyr at counter variabel går med 1 hver sekund fra 10 til 0.
+        -funksjon if statement der når teller, count er mindre eller lik 0, kjører det 2 funksjoner og 3 variabler.
+        -funksjon clearInterval(counter), stopper funksjonen counter å kjøre ved if statement kondisjon er nådd.
+        -funksjon gameOver() kjører if statement er sann og gameOver() gir utskrift 'game over' på canvas skjerm
+        -count = 0 setter variabelen count til 0 når spillet er over
+        -reaper/enemyLoaded stopper onload variabelene for karakterene sånn de ikke spawner etter teller på var count er 0.
+
+        */
+
+        var count = 5; //Spille tid byttet til 60
+        var gameOver = false;
+        function counter() {
+            count--;
+            //Når telleren når 0, er spillet over. Da må vi resette og gjemme noen elementer til spillet starter igjen.
+            if(count <= 0) {
+                clearInterval(counter);
+                gameOver = true;
+                count = 0;
+                reaperLoaded = false;
+                enemyLoaded = false;
+              
+                enemy2Loaded = false; //enmey2 tegnes ikke når spill er over
+            }
+        }
+
+        //Sett intervall (hvert sekund) for tidstelling ved å kjøre counter-funksjonen hvert 1000 milisekund
+        
+        /*
+        setInterval funksjon kjører counter() hver 1sekund
+        */
+        setInterval(counter, 1000);
+//....................................................................................................................................
+
+        //Tegn opp spill-elementene på Canvas-elementet:
+        /* 
+        renderGame() er tegne funksjon som render alle 2d elementer på canvas.
+        - Det er 3 if statements som alle kjører når onload variabelene er 'true' og det er de ved spill restart
+        -ctx.drawImage kan ta imot 3 verdier, variabelen bilde ligger i, x og y posisjon bilde er tegnet på.
+        */
+        function renderGame() {
+            //Tegn spillbildene - hvis de er lastet ferdig:
+            if(backgroundLoaded === true) {
+                ctx.drawImage(background, 0, 0);
+            }
+            if(reaperLoaded === true) {
+                ctx.drawImage(reaperImage, reaper.x, reaper.y);
+            }
+            if(enemyLoaded === true) {
+                ctx.drawImage(enemyImage, enemy.x, enemy.y);
+            }
+            //enemy2load tegner enemy2 på canvas når if() er sann.
+            if(enemy2Loaded === true) {
+                ctx.drawImage(enemy2Image, enemy2.x, enemy2.y);
+            }
+//........................................................................................................................................
+            // Display score and time 
+
+            /* Her 3 fillText på canvas
+            1: antall enemy fanget, tegnet på x:20, y:20 på når venstre top i canvas område
+            2: antall tid i igjen, tegnet på x:20, y:50
+            3: gaveover fillText innholder order 'game over!', x:200 og y:220
+            */
+            ctx.fillStyle = "rgb(250, 250, 250)";
+            ctx.font = "24px Helvetica";
+            ctx.textAlign = "left";
+            ctx.textBaseline = "top";
+            ctx.fillText("Enemies slayn: " + enemiesSlayed, 20, 20);
+            ctx.fillText("Time left: " + count, 20, 50);
+            // Display game over message when timer finished
+            if(gameOver == true){
+                ctx.font = '3.75rem Rye';
+                ctx.fillStyle = 'red';
+                ctx.fillText("Game over!", 200, 220);
+                
+                
+            }
+        }
+//..................................................................................................................................
+        //Kjør en hovedfunksjon for alle spill-delene vi har laget som repeteres (ved hjelp av requestAnimationFrame):
+        /*
+        Denne funksjonen er animasjons funksjonen. Den inneholder requestAnimationFrame() som ligner litt mer setInterval()
+        -parameter i requestAnimationframe() tar imot selve gameRender(), request animation er brukt sånn i mozillia dev dokumentasjon
+        -gameRender kjører i playGame(), så animation request skjer kun når spill pågår.
+        
+        Lenker: https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame
+         */
+        function gameRenderer() {
+            update(0.03); //modifier bytter fra 0.01 til 0.03
+            renderGame();
+            requestAnimationFrame(gameRenderer);
+        }
+//...........................................................................................................
+        // Cross-browser support for requestAnimationFrame
+        /* 
+        Her blir det lagd variabel w = window. Window inneholder alt html-dokument kan inneholde av metoder og properties
+        -requestAnimationFrame er en av metodene
+        -requestAnimationFrame blir satt w.requestAnimationFrame av forskjellige nettlesere:
+        -webtkit = chrome/safari/andriod/IOS
+        -ms = internett explorer
+        -moz = mozilla firefox
+
+        lenker: 
+        webkit: https://www.learnhowtoprogram.com/user-interfaces/advanced-css-features/browser-compatibility-and-vendor-prefixes
+         */
+        var w = window;
+        requestAnimationFrame = w.requestAnimationFrame || w.webkitRequestAnimationFrame || w.msRequestAnimationFrame || w.mozRequestAnimationFrame;
+//................................................................................................................................
+        // Funksjon som resetter/starter et spill
+        /*
+        playGame() er reset funksjonen
+        - var count, teller for spilletid blir satt til start tid, sånn at den kan telle ned til 0 igjen.
+        -gameOver() status er 'false', for at spillet skal starte på nytt igjen
+        -reaper/enemyLoad er status er satt på 'false', så de ikke konstant blir tegnet mens spillet pågår uten kondisjon som
+        når spiller tar igjen fiende og spiller blir tegner tilbake i center igjen og fiende på tilfeldig posisisjon i canvaset.
+        -tilslutt in funksjonen blir det kjørt drawCharacter() som inneholder informasjon om både spiller og fiende sin x og x-akse 
+         */
+        /* funksjonene fungerer, men andre startverdier gjør ikke noe forandring i spillet */
+        function playGame() {
+            //Startverdier:
+             var count = 10;
+            var gameOver = false;
+            reaperLoaded = false;
+            enemyLoaded = false; 
+            
+            enemy2Loaded = false; //enemy2load lastes ikke hver gang
+            //Kjør funksjoner som kontrollerer spillhendelser
+            drawReaper(); 
+            drawEnemy(32,32);
+            drawEnemy2(32,32);
+            
+            gameRenderer();
+        }
+//....................................................................................................................................
+        /* funksjon playGame() kjøres */
+        playGame();
+        
+    </script>
+</body>
+</html>
